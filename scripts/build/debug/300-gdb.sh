@@ -35,7 +35,7 @@ do_debug_gdb_parts() {
 do_debug_gdb_get() {
     local linaro_version
     local linaro_series
-    local linaro_base_url="http://launchpad.net/gdb-linaro"
+    local linaro_base_url="https://launchpad.net/gdb-linaro"
 
     # Account for the Linaro versioning
     linaro_version="$( echo "${CT_GDB_VERSION}"      \

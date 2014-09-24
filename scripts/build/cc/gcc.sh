@@ -6,17 +6,21 @@
 do_cc_get() {
     local linaro_version
     local linaro_series
-    local linaro_base_url="http://launchpad.net/gcc-linaro"
+    local linaro_base_url="https://launchpad.net/gcc-linaro"
+    local linaro_own_base_url="http://releases.linaro.org"
 
     if [ "${CT_CC_CUSTOM}" = "y" ]; then
         CT_GetCustom "gcc" "${CT_CC_VERSION}" "${CT_CC_CUSTOM_LOCATION}"
     else
         # Account for the Linaro versioning
-        linaro_version="$( echo "${CT_CC_VERSION}"      \
-                           |sed -r -e 's/^linaro-//;'   \
+        linaro_version="$( echo "${CT_CC_VERSION}"                                                                                      \
+                           |sed -r -e 's/^linaro-//;'                                                                                   \
                          )"
-        linaro_series="$( echo "${linaro_version}"      \
-                          |sed -r -e 's/-.*//;'         \
+        linaro_series="$( echo "${linaro_version}"                                                                                      \
+                          |sed -r -e 's/-.*//;'                                                                                         \
+                        )"
+        linaro_release="$( echo ${CT_CC_VERSION}                                                                                        \
+                           |sed -r -e 's/(^linaro-[[:digit:]]*\.[[:digit:]]*-[[:digit:]]{2})([[:digit:]]{2}\.[[:digit:]]{2})(.*?)/\2/;' \
                         )"
 
         # Ah! gcc folks are kind of 'different': they store the tarballs in
@@ -24,11 +28,15 @@ do_cc_get() {
         # Arrgghh! Some of those versions does not follow this convention:
         # gcc-3.3.3 lives in releases/gcc-3.3.3, while gcc-2.95.* isn't in a
         # subdirectory!
-        CT_GetFile "gcc-${CT_CC_VERSION}"                                                       \
-                   {ftp,http}://ftp.gnu.org/gnu/gcc{,{,/releases}/gcc-${CT_CC_VERSION}}         \
-                   ftp://ftp.irisa.fr/pub/mirrors/gcc.gnu.org/gcc/releases/gcc-${CT_CC_VERSION} \
-                   ftp://ftp.uvsq.fr/pub/gcc/snapshots/${CT_CC_VERSION}                         \
-                   "${linaro_base_url}/${linaro_series}/${linaro_version}/+download"
+        # Linaro also started playing with the subdirectory name, at least for the 2013.06-1 respun releases...
+        # And they now also exclusively host it themselves... (2014.07)
+        CT_GetFile "gcc-${CT_CC_VERSION}"                                                                      \
+                   {ftp,http}://ftp.gnu.org/gnu/gcc{,{,/releases}/gcc-${CT_CC_VERSION}}                        \
+                   ftp://ftp.irisa.fr/pub/mirrors/gcc.gnu.org/gcc/releases/gcc-${CT_CC_VERSION}                \
+                   ftp://ftp.uvsq.fr/pub/gcc/snapshots/${CT_CC_VERSION}                                        \
+                   "${linaro_base_url}/${linaro_series}/${linaro_version}/+download"                           \
+                   "${linaro_base_url}/${linaro_series}/gcc-${CT_CC_VERSION}/+download"                        \
+                   "${linaro_own_base_url}/${linaro_release}/components/toolchain/gcc-linaro/${linaro_series}"
 
     fi # ! custom location
     # Starting with GCC 4.3, ecj is used for Java, and will only be
@@ -532,6 +540,8 @@ do_cc_for_build() {
     build_final_opts+=( "host=${CT_BUILD}" )
     build_final_opts+=( "prefix=${CT_BUILDTOOLS_PREFIX_DIR}" )
     build_final_opts+=( "complibs=${CT_BUILDTOOLS_PREFIX_DIR}" )
+    build_final_opts+=( "cflags=${CT_CFLAGS_FOR_BUILD}" )
+    build_final_opts+=( "ldflags=${CT_LDFLAGS_FOR_BUILD}" )
     build_final_opts+=( "lang_list=$( cc_gcc_lang_list )" )
     if [ "${CT_BARE_METAL}" = "y" ]; then
         # In the tests I've done, bare-metal was not impacted by the
@@ -588,7 +598,15 @@ do_cc_for_host() {
     CT_DoStep INFO "Installing final compiler"
     CT_mkdir_pushd "${CT_BUILD_DIR}/build-cc-final"
 
+    # MMB prevent double definitions
+    CT_DoLog EXTRA "Preventing auto_host.h from being used ${CT_SRC_DIR}/gcc-${CT_CC_VERSION}/libgcc/Makefile.in"
+    sed -r -i.orig -e 's@CRTSTUFF_CFLAGS = -O2 @CRTSTUFF_CFLAGS = -O2 -DUSED_FOR_TARGET @g' ${CT_SRC_DIR}/gcc-${CT_CC_VERSION}/libgcc/Makefile.in
+
     "${final_backend}" "${final_opts[@]}"
+
+    # MMB revert
+    CT_DoLog EXTRA "Restoring ${CT_SRC_DIR}/gcc-${CT_CC_VERSION}/libgcc/Makefile.in"
+    sed -r -i.rupor -e 's@CRTSTUFF_CFLAGS = -O2 -DUSED_FOR_TARGET @CRTSTUFF_CFLAGS = -O2 @g' ${CT_SRC_DIR}/gcc-${CT_CC_VERSION}/libgcc/Makefile.in
 
     CT_Popd
     CT_EndStep
@@ -752,8 +770,10 @@ do_cc_backend() {
     fi
     if [ "${CT_CC_GCC_USE_LTO}" = "y" ]; then
         extra_config+=("--with-libelf=${complibs}")
+        extra_config+=("--enable-lto")
     elif [ "${CT_CC_GCC_HAS_LTO}" = "y" ]; then
         extra_config+=("--with-libelf=no")
+        extra_config+=("--disable-lto")
     fi
 
     if [ ${#host_libstdcxx_flags[@]} -ne 0 ]; then

@@ -6,9 +6,17 @@ choice
 # Don't remove next line
 # CT_INSERT_VERSION_BELOW
 
+config GMP_V_6_0_0A
+    bool
+    prompt "6.0.0a"
+
 config GMP_V_5_1_3
     bool
     prompt "5.1.3"
+
+config GMP_V_5_1_2
+    bool
+    prompt "5.1.2"
 
 config GMP_V_5_1_1
     bool
@@ -40,7 +48,9 @@ config GMP_VERSION
     string
 # Don't remove next line
 # CT_INSERT_VERSION_STRING_BELOW
+    default "6.0.0a" if GMP_V_6_0_0A
     default "5.1.3" if GMP_V_5_1_3
+    default "5.1.2" if GMP_V_5_1_2
     default "5.1.1" if GMP_V_5_1_1
     default "5.0.2" if GMP_V_5_0_2
     default "5.0.1" if GMP_V_5_0_1

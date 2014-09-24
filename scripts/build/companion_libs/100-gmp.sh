@@ -82,6 +82,8 @@ do_gmp_backend() {
     CT_DoLog EXTRA "Configuring GMP"
 
     CT_DoExecLog CFG                                \
+    CC="${host}-gcc"                                \
+    CXX="${host}-g++"                               \
     CFLAGS="${cflags} -fexceptions"                 \
     LDFLAGS="${ldflags}"                            \
     "${CT_SRC_DIR}/gmp-${CT_GMP_VERSION}/configure" \
