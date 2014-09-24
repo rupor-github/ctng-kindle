@@ -1,7 +1,7 @@
-**************************************************************************************************
-*** Reluctant FORK of crosstool-ng 1.20 to build arm compiler under cygwin64 hosted on mingw64 ***
-*** real crosstool-ng could be found here: http://crosstool-ng.org/                            ***
-**************************************************************************************************
+***************************************************************************************
+*** Reluctant FORK of crosstool-ng 1.20 to build arm compiler under cygwin64 hosted ***
+*** on mingw64. Real crosstool-ng could be found here: http://crosstool-ng.org/     ***
+***************************************************************************************
 
 This is the README for crosstool-NG
 
