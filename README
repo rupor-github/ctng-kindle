@@ -1,3 +1,7 @@
+******************************************************************************************
+Reluctant FORK of crosstool-ng 1.20 to build arm compiler under cygwin64 hosted on mingw64
+******************************************************************************************
+
 This is the README for crosstool-NG
 
 Crosstool-NG follows the autoconf dance. So, to get you
